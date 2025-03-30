@@ -1,1 +1,1 @@
-# nummat-2425
+# Metoda konjugiranih gradientov s predpogojevanjem
