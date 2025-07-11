@@ -1,4 +1,4 @@
-using MKGsPredpogojevanjem
+using MKG
 using Test
 
 @testset "Test" begin
