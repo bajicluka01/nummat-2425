@@ -1,0 +1,5 @@
+*.out
+*.log
+*.aux
+*.minted
+jl_*
