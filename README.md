@@ -1,6 +1,6 @@
 # 18.1.3 Metoda konjugiranih gradientov s predpogojevanjem
 
-Avtor: Luka Bajić
+Avtor: Luka Bajić (<lb4129@student.uni-lj.si>)
 
 ## Opis problema
 
@@ -12,8 +12,16 @@ TODO
 
 ## Navodila za poganjanje testov 
 
-TODO
+Najprej v korenski mapi projekta odpremo Julia REPL in nato vstopimo v paketni način, kjer poženemo naslednji ukaz:
+
+```
+test MKG
+```
 
 ## Navodila za kreiranje poročila
 
-TODO
+Najprej v korenski mapi projekta odpremo Julia REPL in nato poženemo naslednji ukaz:
+
+```
+include("scripts/makedocs.jl")
+```
