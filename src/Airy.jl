@@ -59,7 +59,7 @@ function airy_k_nicel(k::Integer; h::Float64=0.01, metoda::String="bisekcija", m
         if sign(y[1]) != sign(y_prej[1])
             # kličemo eno izmed metod, da dobimo ničlo z želeno natančnostjo
             if metoda == "tangentna"
-                n, iter = tangentna(y, i+step, y_prej, i)
+                n, iter = tangentna(y_prej, i)
             elseif metoda == "regula"
                 n, iter = regula_falsi(y, i+step, y_prej, i)
             else
@@ -116,7 +116,7 @@ function airy_nicle_na_intervalu(a::Float64; h::Float64=0.01, metoda::String="bi
         if sign(y[1]) != sign(y_prej[1])
             # kličemo eno izmed metod, da dobimo ničlo z želeno natančnostjo
             if metoda == "tangentna"
-                n, iter = tangentna(y, i+step, y_prej, i)
+                n, iter = tangentna(y_prej, i)
             elseif metoda == "regula"
                 n, iter = regula_falsi(y, i+step, y_prej, i)
             else
@@ -136,8 +136,9 @@ function airy_nicle_na_intervalu(a::Float64; h::Float64=0.01, metoda::String="bi
     return nicle#, xs, ys, xs_total, ys_total
 end
 
-function tangentna(y::Vector, x::Float64, y_prej::Vector, x_prej::Float64; tol::Float64=10e-11, max_iter::Integer=1000)
+function tangentna(y_prej::Vector, x_prej::Float64; tol::Float64=10e-11, max_iter::Integer=1000)
     i = 0
+    x = 0
     for i=1:max_iter
         x = x_prej - y_prej[1]/y_prej[2]
         h = x-x_prej
