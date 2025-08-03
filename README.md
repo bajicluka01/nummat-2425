@@ -1,4 +1,4 @@
-# 18.3.4 Obhod lune
+# 18.3.4 Ničle Airyjeve funkcije
 
 Avtor: Luka Bajić (<lb4129@student.uni-lj.si>)
 
