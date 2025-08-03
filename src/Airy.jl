@@ -80,8 +80,9 @@ function airy_k_nicel(k::Integer; h::Float64=0.01, metoda::String="bisekcija", m
             return nicle
         end
     end
-
-    
+    # če smo presegli maksimalno število korakov, vseeno vrnemo vse ničle, ki smo jih našli
+    # na tem mestu bi po potrebi lahko vrnili tudi napako
+    return nicle
 end
 
 """

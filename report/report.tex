@@ -122,137 +122,101 @@
 
 
 \section{Ničle Airyjeve funkcije}
+Avtor: Luka Bajić
+
+
+\subsection{Opis problema}
+Problem, ki ga rešujemo je sestavljen iz dveh delov: numeričnega reševanja diferencialne enačbe drugega reda in iskanja ničel funkcije z metodami kot so bisekcija in regula falsi. Rezultati morajo biti natančni na deset decimalnih mest.
+
+
+Želimo poiskati čimveč ničel Airyjeve funkcije, ki je dana z naslednjo diferencialno enačbo:
+
+
 \[
-\begin{bmatrix}A1 &A2 & A3\\A4 & A5 & A6 \end{bmatrix}
+Ai''(x)-xAi(x)=0
 \]
+
+pri začetnih pogojih
+
+
+\[
+Ai(0) = \frac{1}{3^{\frac{2}{3}}\Gamma(\frac{2}{3})}, Ai'(0) = -\frac{1}{3^{\frac{1}{3}}\Gamma(\frac{1}{3})}
+\]
+
+Vrednosti funkcije lahko računamo z uporabo Magnusove metode, pri kateri se z izbranim korakom $h$ premikamo od začetne vrednosti v levo po $x$-osi (ker vemo, da ima funkcija $Ai$ vse ničle negativne). Premik izvajamo z naslednjo formulo:
+
+
+\[
+y_{k+1} = exp(\frac{h}{2}(A_1+A_2)-\frac{\sqrt{3}}{12}h^2[A_1,A_2])
+\]
+
+pri čemer je $A_{1,2}=A(x_k+(\frac{1}{2}\pm \frac{\sqrt{3}}{6})h)$ in $[A_1,A_2] = A_1A_2-A_2A_1$.  Matriko $A$ pa dobimo tako, da zgornjo diferencialno enačbo drugega reda prevedemo na sistem diferencialnih enačb prvega reda, in sicer: 
+
+
+\[
+Y'(x)=\begin{bmatrix}Ai'(x) \\ Ai''(x)\end{bmatrix} = \begin{bmatrix}Ai'(x) \\ xAi'(x)\end{bmatrix}
+\]
+
+kar lahko preoblikujemo v ustrezno obliko za Magnusovo metodo:
+
+
+\[
+Y'(x) = \begin{bmatrix}0 & 1 \\ x & 0\end{bmatrix}\begin{bmatrix}Ai(x) \\ Ai'(x)\end{bmatrix}
+\]
+
+kjer je iskana matrika torej $A=\begin{bmatrix}0 & 1 \\ x & 0\end{bmatrix}$
+
+
+\subsection{Opis rešitve}
+Za izračun vrednosti Airyjeve funkcije enostavno sledimo zgoraj navedenim formulam, pri čemer lahko določene vrednosti, npr. vrednosti začetnih pogojev, vnaprej izračunamo z orodjem kot je Wolfram Alpha, ker je njihova vrednost neodvisna od ostalih parametrov. Ostali izračuni se izvajajo v metodi $\text{airy\_premik}$, ki na podlagi prejšnjih vrednosti $y_k$, in $y_k'$ pri $x_k$, in parametra za korak $h$, ki ga lahko poljubno določimo, izračuna vrednosti funkcije pri $x_k+h$,  torej $y_{k+1}$ in $y_{k+1}'$.
+
+
+\subsubsection{Iskanje ničel}
+Implementacija ponuja dve možnosti za iskanje ničel: uporabnik specificira interval $[a,0]$, na katerem  metoda $\text{airy\_nicle\_na\_intervalu}$ najde vse ničle, ali pa specificira vrednost $k$, nakar  metoda $\text{airy\_k\_nicel}$ vrne prvih $k$ ničel od koordinatnega izhodišča proti $-\infty$.
+
+
+Razlika med metodama je samo v zaustavitvenem pogoju, postopek iskanja posamezne ničle ostaja enak, in sicer: z zgoraj omenjenim postopkom se s korakom $h$ premikamo po funkciji in na vsakem koraku preverjamo ali se predznak vrednosti funkcije razlikuje od predznaka vrednosti funkcije na prejšnjem koraku. Ker vemo, da je funkcija zvezna, razlika med prezdnakoma pomeni,  da se na intervalu med $x_k$ in $x_{k+1}$ nahaja ničla. Ker je zahtevana natančnost na deset decimalk, se na tem mestu izvede ena izmed metod regula falsi, bisekcija ali tangentna metoda (izbiro podamo kot argument) za iskanje ničle.
+
 
 \begin{lstlisting}
 (*@\HLJLk{using}@*) (*@\HLJLn{Airy}@*)(*@\HLJLp{,}@*) (*@\HLJLn{Plots}@*)
 (*@\HLJLk{using}@*) (*@\HLJLn{SpecialFunctions}@*)
 
-(*@\HLJLn{A}@*) (*@\HLJLoB{=}@*) (*@\HLJLp{[}@*)(*@\HLJLni{1}@*) (*@\HLJLni{2}@*) (*@\HLJLni{3}@*)(*@\HLJLp{;}@*) (*@\HLJLni{2}@*) (*@\HLJLni{1}@*) (*@\HLJLni{1}@*)(*@\HLJLp{;}@*) (*@\HLJLni{5}@*) (*@\HLJLoB{-}@*)(*@\HLJLni{1}@*) (*@\HLJLni{3}@*)(*@\HLJLp{]}@*)
-(*@\HLJLn{B}@*) (*@\HLJLoB{=}@*) (*@\HLJLp{[}@*)(*@\HLJLni{2}@*) (*@\HLJLni{3}@*) (*@\HLJLoB{-}@*)(*@\HLJLni{1}@*)(*@\HLJLp{;}@*) (*@\HLJLoB{-}@*)(*@\HLJLni{1}@*) (*@\HLJLoB{-}@*)(*@\HLJLni{1}@*) (*@\HLJLni{0}@*)(*@\HLJLp{;}@*) (*@\HLJLni{2}@*) (*@\HLJLni{2}@*) (*@\HLJLni{1}@*)(*@\HLJLp{]}@*)
-(*@\HLJLnf{kom}@*)(*@\HLJLp{(}@*)(*@\HLJLn{A}@*)(*@\HLJLp{,}@*) (*@\HLJLn{B}@*)(*@\HLJLp{)}@*)
+(*@\HLJLn{x}@*) (*@\HLJLoB{=}@*) (*@\HLJLnf{Float64}@*)(*@\HLJLp{(}@*)(*@\HLJLoB{-}@*)(*@\HLJLnfB{3.5}@*)(*@\HLJLp{)}@*)
+(*@\HLJLn{x2}@*) (*@\HLJLoB{=}@*) (*@\HLJLnf{airyai}@*)(*@\HLJLp{(}@*)(*@\HLJLn{x}@*)(*@\HLJLp{)}@*)
+(*@\HLJLn{x1}@*)(*@\HLJLp{,}@*) (*@\HLJLn{xs}@*)(*@\HLJLp{,}@*) (*@\HLJLn{ys}@*)(*@\HLJLp{,}@*) (*@\HLJLn{xs{\_}}@*)(*@\HLJLp{,}@*) (*@\HLJLn{ys{\_}}@*) (*@\HLJLoB{=}@*) (*@\HLJLnf{airy{\_}nicle{\_}na{\_}intervalu}@*)(*@\HLJLp{(}@*)(*@\HLJLn{x}@*)(*@\HLJLp{,}@*) (*@\HLJLnfB{0.0005}@*)(*@\HLJLp{)}@*)
+(*@\HLJLn{x1}@*)(*@\HLJLp{[}@*)(*@\HLJLni{1}@*)(*@\HLJLp{]}@*)
+(*@\HLJLcs{{\#}start}@*) (*@\HLJLcs{=}@*) (*@\HLJLcs{23381}@*)
+(*@\HLJLcs{{\#}stop}@*) (*@\HLJLcs{=}@*) (*@\HLJLcs{23384}@*)
+(*@\HLJLn{start}@*) (*@\HLJLoB{=}@*) (*@\HLJLni{2338}@*)
+(*@\HLJLn{stop}@*) (*@\HLJLoB{=}@*) (*@\HLJLni{2341}@*)
+(*@\HLJLnf{plot}@*)(*@\HLJLp{(}@*)(*@\HLJLn{xs{\_}}@*)(*@\HLJLp{[}@*)(*@\HLJLn{start}@*)(*@\HLJLoB{:}@*)(*@\HLJLn{stop}@*)(*@\HLJLp{],}@*) (*@\HLJLn{ys{\_}}@*)(*@\HLJLp{[}@*)(*@\HLJLn{start}@*)(*@\HLJLoB{:}@*)(*@\HLJLn{stop}@*)(*@\HLJLp{])}@*)
+(*@\HLJLnf{scatter!}@*)(*@\HLJLp{(}@*)(*@\HLJLn{xs}@*)(*@\HLJLp{,}@*) (*@\HLJLn{ys}@*)(*@\HLJLp{)}@*)
 
-(*@\HLJLn{h}@*) (*@\HLJLoB{=}@*) (*@\HLJLnfB{0.1}@*)
-(*@\HLJLnf{sigma}@*)(*@\HLJLp{(}@*)(*@\HLJLn{h}@*)(*@\HLJLp{,}@*)  (*@\HLJLn{A}@*)(*@\HLJLp{,}@*) (*@\HLJLn{B}@*)(*@\HLJLp{)}@*)
+(*@\HLJLnf{airy{\_}k{\_}nicel}@*)(*@\HLJLp{(}@*)(*@\HLJLni{10}@*)(*@\HLJLp{)}@*)
 
-(*@\HLJLn{x}@*) (*@\HLJLoB{=}@*) (*@\HLJLnf{Float64}@*)(*@\HLJLp{(}@*)(*@\HLJLni{2}@*)(*@\HLJLp{)}@*)
-(*@\HLJLnf{airyai}@*)(*@\HLJLp{(}@*)(*@\HLJLn{x}@*)(*@\HLJLp{)}@*)
-(*@\HLJLn{tmp}@*) (*@\HLJLoB{=}@*)(*@\HLJLnf{airy{\_}vrednost}@*)(*@\HLJLp{(}@*)(*@\HLJLn{x}@*)(*@\HLJLp{)}@*)
+(*@\HLJLn{x}@*) (*@\HLJLoB{=}@*) (*@\HLJLnf{Float64}@*)(*@\HLJLp{(}@*)(*@\HLJLoB{-}@*)(*@\HLJLnfB{8.5}@*)(*@\HLJLp{)}@*)
+(*@\HLJLn{x2}@*) (*@\HLJLoB{=}@*) (*@\HLJLnf{airyai}@*)(*@\HLJLp{(}@*)(*@\HLJLn{x}@*)(*@\HLJLp{)}@*)
+(*@\HLJLn{x1}@*) (*@\HLJLoB{=}@*) (*@\HLJLnf{airy{\_}nicle{\_}na{\_}intervalu}@*)(*@\HLJLp{(}@*)(*@\HLJLn{x}@*)(*@\HLJLp{,}@*) (*@\HLJLnfB{0.005}@*)(*@\HLJLp{)}@*)
+(*@\HLJLn{x1}@*)(*@\HLJLp{[}@*)(*@\HLJLni{1}@*)(*@\HLJLp{]}@*)
+
+(*@\HLJLnf{airyai}@*)(*@\HLJLp{(}@*)(*@\HLJLn{x1}@*)(*@\HLJLp{[}@*)(*@\HLJLni{1}@*)(*@\HLJLp{])}@*)
+(*@\HLJLnf{abs}@*)(*@\HLJLp{(}@*)(*@\HLJLn{x1}@*)(*@\HLJLp{[}@*)(*@\HLJLni{1}@*)(*@\HLJLp{]}@*)(*@\HLJLoB{-}@*)(*@\HLJLn{n1}@*)(*@\HLJLp{)}@*)
+
+(*@\HLJLnf{isapprox}@*)(*@\HLJLp{(}@*)(*@\HLJLn{x1}@*)(*@\HLJLp{[}@*)(*@\HLJLni{1}@*)(*@\HLJLp{],}@*) (*@\HLJLn{n1}@*)(*@\HLJLp{,}@*) (*@\HLJLn{atol}@*)(*@\HLJLoB{=}@*)(*@\HLJLnfB{10e-4}@*)(*@\HLJLp{)}@*)
+(*@\HLJLnf{isapprox}@*)(*@\HLJLp{(}@*)(*@\HLJLn{x1}@*)(*@\HLJLp{[}@*)(*@\HLJLni{1}@*)(*@\HLJLp{],}@*) (*@\HLJLn{n1}@*)(*@\HLJLp{,}@*) (*@\HLJLn{atol}@*)(*@\HLJLoB{=}@*)(*@\HLJLnfB{10e-6}@*)(*@\HLJLp{)}@*)
+(*@\HLJLnf{isapprox}@*)(*@\HLJLp{(}@*)(*@\HLJLn{x1}@*)(*@\HLJLp{[}@*)(*@\HLJLni{1}@*)(*@\HLJLp{],}@*) (*@\HLJLn{n1}@*)(*@\HLJLp{,}@*) (*@\HLJLn{atol}@*)(*@\HLJLoB{=}@*)(*@\HLJLnfB{10e-10}@*)(*@\HLJLp{)}@*)
 \end{lstlisting}
 
 \begin{lstlisting}
-[0.3550280538878172, -0.2588194037928068]
-[0.3298182583212915, -0.2449759689898648]
-[0.30590420287145953, -0.23292674523188217]
-[0.28311672761054574, -0.22246707076113253]
-[0.261305747528852, -0.2134199323785479]
-[0.24033772896040206, -0.20563118843681713]
-[0.22009360120564184, -0.19896562994553746]
-[0.20046702806736127, -0.19330371207624147]
-[0.18136297890344705, -0.18853882532874947]
-[0.16269655042584708, -0.184575004064426]
-[0.1443919995824168, -0.18132499217122716]
-[0.1263819550051452, -0.17870860287307064]
-[0.10860678011644974, -0.17665132329287772]
-[0.0910140653758919, -0.17508312518532004]
-[0.07355823056911723, -0.17393745191193047]
-[0.05620022067974206, -0.17315035871414391]
-[0.038907280892611876, -0.17265978900255977]
-[0.02165279777204288, -0.17240497398374144]
-[0.004416194737622531, -0.1723259466784439]
-[-0.012817129296955831, -0.17236316438157492]
-[-0.030055828780813226, -0.17245723596618656]
-[-0.04730261826738015, -0.17254875220029167]
-[-0.06455426730831752, -0.17257821846047502]
-[-0.08180159374147962, -0.17248608990646175]
-[-0.0990294656298114, -0.1722129093309366]
-[-0.11621682211184145, -0.17169954751854621]
-[-0.1333367233636446, -0.1708875450374518]
-[-0.15035643969410345, -0.16971955295306135]
-[-0.16723758944861117, -0.16813986801636602]
-[-0.1839363348325144, -0.1660950554767174]
-[-0.2004036439410447, -0.16353464986242894]
-[-0.21658562616119922, -0.16041192095131782]
-[-0.2324239466673778, -0.15668468883633557]
-[-0.2478563239543861, -0.15231616862848651]
-[-0.2628171122428974, -0.1472758221085591]
-[-0.27723796817690455, -0.14154019074256002]
-[-0.2910485985543094, -0.135093682130181]
-[-0.30417758295678915, -0.12792928038197335]
-[-0.3165532621612308, -0.12004915032948399]
-[-0.32810468022989847, -0.11146510604679025]
-[-0.3387625653138008, -0.1021989160406363]
-[-0.3484603315980905, -0.09228242072730158]
-[-0.3571350826083345, -0.08175744245880745]
-[-0.36472859441656913, -0.07067547430346285]
-[-0.3711882562574263, -0.059097140848311205]
-[-0.3764679457862087, -0.04709143220586325]
-[-0.38052881675065, -0.03473472082636623]
-[-0.38333997823622556, -0.022109579229010315]
-[-0.3848790468682051, -0.009303424922499233]
-[-0.385132556353754, 0.0035929738684614063]
-[-0.38409621242146097, 0.01648709194888061]
-[-0.3817749854207105, 0.029286296155877516]
-[-0.37818303740359666, 0.041899502802235415]
-[-0.37334348522922467, 0.05423879620882413]
-[-0.3672880058952644, 0.06622096254256464]
-[-0.36005629470786077, 0.0777688967625629]
-[-0.3516953908569667, 0.08881284586678151]
-[-0.3422588883051546, 0.09929145850458937]
-[-0.3318060524955609, 0.10915261897446224]
-[-0.320400865153284, 0.11835405220855978]
-[-0.3081110203549442, 0.12686369508855194]
-[-0.2950068950799404, 0.13465983788939567]
-[-0.28116051668370484, 0.14173104740717846]
-[-0.2666445482341827, 0.14807589006299945]
-[-0.25153131054277345, 0.15370247874478904]
-[-0.23589185713441263, 0.1586278712068479]
-[-0.21979511548247266, 0.16287735044259458]
-[-0.20330710472737704, 0.16648361861799807]
-[-0.18649023694021333, 0.16948593601540185]
-[-0.16940270590673792, 0.17192923516256844]
-[-0.15209796449617435, 0.1738632381225015]
-[-0.13462428902388035, 0.17534160203008853]
-[-0.11702442667435117, 0.17642111462037258]
-[-0.09933532005479077, 0.17716095792873662]
-[-0.08158790131144686, 0.17762205476269338]
-[-0.0638069469535929, 0.17786650912682422]
-[-0.046010983569748996, 0.17795714867245974]
-[-0.02821223395087082, 0.17795717455413163]
-[-0.010416592709598074, 0.1779299218860747]
-[0.007376379749590283, 0.17793873235664898]
-[0.025173456154242994, 0.17804693950646502]
-[0.04298774545113847, 0.17831796672091854]
-[0.06083871133506401, 0.17881553813396361]
-[0.07875221755108393, 0.17960400338894572]
-[0.0967606114611742, 0.18074877856041474]
-[0.11490285769209332, 0.18231690752599325]
-[0.13322473423882064, 0.18437775072665008]
-[0.1517791042562911, 0.18700381163131205]
-[0.17062627800913013, 0.1902717154279892]
-[0.18983448115462379, 0.1942633596459182]
-[0.20948044781592468, 0.19906726277978312]
-[0.22965015989281246, 0.204780144824452]
-[0.2504397579221612, 0.21150878332561124]
-[0.2719566537509789, 0.21937220063109777]
-[0.2943208815937984, 0.22850425319064518]
-[0.3176667320673597, 0.2390567129380183]
-[0.3421447239926594, 0.25120295526234665]
-[0.3679239817390713, 0.26514239954006397]
-[0.39519510246896417, 0.28110588896983585]
-[0.4241736189082207, 0.2993622496925672]
-[0.4551041906763286, 0.32022633923894994]
-0.4551041906763286
-\end{lstlisting}
+Error: MethodError: no method matching airy(*@{{\_}}@*)nicle(*@{{\_}}@*)na(*@{{\_}}@*)intervalu(::Float64, :
+:Float64)
+The function (*@{{\textasciigrave}}@*)airy(*@{{\_}}@*)nicle(*@{{\_}}@*)na(*@{{\_}}@*)intervalu(*@{{\textasciigrave}}@*) exists, but no method is defined for
+ this combination of argument types.
 
-
-test
-
-
-\begin{lstlisting}
-
+Closest candidates are:
+  airy(*@{{\_}}@*)nicle(*@{{\_}}@*)na(*@{{\_}}@*)intervalu(::Float64; h, metoda)
+   @ Airy c:(*@{{\textbackslash}}@*)fri(*@{{\textbackslash}}@*)numerical(*@{{\_}}@*)math(*@{{\textbackslash}}@*)hws(*@{{\textbackslash}}@*)hw3(*@{{\_}}@*)actual(*@{{\textbackslash}}@*)nummat-2425(*@{{\textbackslash}}@*)src(*@{{\textbackslash}}@*)Airy.jl:92
 \end{lstlisting}
 
 
