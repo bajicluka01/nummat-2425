@@ -33,14 +33,14 @@
 #' ## Opis rešitve
 #' Za izračun vrednosti Airyjeve funkcije enostavno sledimo zgoraj navedenim formulam, pri čemer lahko določene vrednosti,
 #' npr. vrednosti začetnih pogojev, vnaprej izračunamo z orodjem kot je Wolfram Alpha, ker je njihova vrednost neodvisna
-#' od ostalih parametrov. Ostali izračuni se izvajajo v metodi $\text{airy\_premik}$, ki na podlagi prejšnjih vrednosti $y_k$, in $y_k'$
+#' od ostalih parametrov. Ostali izračuni se izvajajo v metodi $\textit{airy\_premik}$, ki na podlagi prejšnjih vrednosti $y_k$, in $y_k'$
 #' pri $x_k$, in parametra za korak $h$, ki ga lahko poljubno določimo, izračuna vrednosti funkcije pri $x_k+h$, 
 #' torej $y_{k+1}$ in $y_{k+1}'$.
 
 #' ### Iskanje ničel
 #' Implementacija ponuja dve možnosti za iskanje ničel: uporabnik specificira interval $[a,0]$, na katerem 
-#' metoda $\text{airy\_nicle\_na\_intervalu}$ najde vse ničle, ali pa specificira vrednost $k$, nakar 
-#' metoda $\text{airy\_k\_nicel}$ vrne prvih $k$ ničel od koordinatnega izhodišča proti $-\infty$.
+#' metoda $\textit{airy\_nicle\_na\_intervalu}$ najde vse ničle, ali pa specificira vrednost $k$, nakar 
+#' metoda $\textit{airy\_k\_nicel}$ vrne prvih $k$ ničel od koordinatnega izhodišča proti $-\infty$.
 
 #' Razlika med metodama je samo v zaustavitvenem pogoju, postopek iskanja posamezne ničle ostaja enak, in sicer:
 #' z zgoraj omenjenim postopkom se s korakom $h$ premikamo po funkciji in na vsakem koraku preverjamo ali se predznak vrednosti
@@ -49,30 +49,49 @@
 #' in posledično ni dovolj natančen), se na tem mestu izvede ena izmed metod regula falsi, bisekcija ali tangentna metoda 
 #' (izbiro podamo kot argument) za iskanje ničle.
 
+#' #### Bisekcija
+#' Interval $[a, b]$, pri čemer sta $y(a)$ in $y(b)$ različno predznačena, razpolovimo, izračunamo vrednost funkcije v srednji točki
+#' z Magnusovo metodo (torej z metodo $\textit{airy\_premik}$) in nato izberemo podinterval $[a, \frac{b-a}{2}]$ ali $[\frac{b-a}{2}, b]$
+#' pri katerem se predznaka v robnih točkah razlikujeta. Postopek ponavljamo dokler ni razlika med sosednjima vrednostma, tako po $x$-u 
+#' kot po $y$-u manjša od želene tolerance. 
+
+#' #### Regula falsi
+#' Podobno kot pri bisekciji, na vsakem koraku izberemo podinterval kjer sta predznaka v robnih točkah različna, razlika je le, da pri regula
+#' falsi ne vzamemo srednje točke, temveč jo izračunamo s sledečo formulo:
+
+#' $c = b - \frac{y(b)(b-a)}{y(b)-y(a)}$
+
+#' Nato izberemo ustrezen interval izmed $[a,c]$, $[c,b]$. Pogoj za zadovoljeno toleranco ostaja enak.
+
+#' #### Tangentna metoda
+#' Pri tangentni metodi je pogosto problematično računanje odvoda funkcije, v našem primeru pa nam ga Magnusova metoda
+#' računa v vsakem koraku, torej ga lahko direktno uporabimo v sledeči formuli:
+
+#' $x_{k+1} = x_k - \frac{y(x_k)}{y'(x_k)}$
+
+#' Pri tej metodi ne gledamo predznakov, temveč samo ponavljamo iteracijo z zgornjo enačbo dokler ni izpolnjen zaustavitveni pogoj.
+
+#' ## Primer uporabe
+
+#' Spodnji izsek kode prikazuje primer uporabe metode $\textit{airy\_nicle\_na\_intervalu}$, ki najde vse ničle na specificiranem intervalu.
+#' Z zastavico $\textit{vrni\_vmesne}$ dobimo vrnjene tudi vse izračunane vmesne vrednosti, ki jih lahko izrišemo s paketom Plots.
+
 using Airy, Plots
-using SpecialFunctions
+nicle, xs, ys = airy_nicle_na_intervalu(-8.5, vrni_vmesne=true)
+plot(xs[:], ys[:], label="Airyjeva funkcija")
+scatter!(nicle[:], zeros(size(nicle)), label="Ničle")
 
-x = Float64(-3.5)
-x2 = airyai(x)
-x1, xs, ys, xs_, ys_ = airy_nicle_na_intervalu(x, 0.0005)
-x1[1]
-#start = 23381
-#stop = 23384
-start = 2338
-stop = 2341
-plot(xs_[start:stop], ys_[start:stop])
-scatter!(xs, ys)
+#' Še ena dodatna funkcionalnost, ki jo paket omogoča, je izračun povprečnega števila iteracij, ki ga posamezna metoda potrebuje, da
+#' skonvergira k dovolj točni rešitvi. Spodnji izsek kode prikazuje primer uporabe te funkcionalnosti.
 
-airy_k_nicel(10)
+k = 3000
+_, avg1 = airy_k_nicel(k, metoda="bisekcija", vrni_povp_iter=true)
+_, avg2 = airy_k_nicel(k, metoda="regula", vrni_povp_iter=true)
+_, avg3 = airy_k_nicel(k, metoda="tangentna", vrni_povp_iter=true)
 
-x = Float64(-8.5)
-x2 = airyai(x)
-x1 = airy_nicle_na_intervalu(x, 0.005)
-x1[1]
+println("Bisekcija potrebuje povprecno ", round(avg1, sigdigits=5)," iteracij za izracun prvih $k nicel.")
+println("Regula falsi potrebuje povprecno ", round(avg2, sigdigits=5)," iteracij za izracun prvih $k nicel.")
+println("Tangentna metoda potrebuje povprecno ", round(avg3, sigdigits=5)," iteracij za izracun prvih $k nicel.")
 
-airyai(x1[1])
-abs(x1[1]-n1)
-
-isapprox(x1[1], n1, atol=10e-4)
-isapprox(x1[1], n1, atol=10e-6)
-isapprox(x1[1], n1, atol=10e-10)
+#' Kot vidimo iz izpisa, je tangentna metoda bistveno hitrejša in ker vemo, da je Airyjeva funkcija vedno strma blizu ničle,
+#' ni težav s konvergenco in lahko torej tangentno metodo nastavimo kot privzeto metodo, če uporabnik ne specificira druge.
