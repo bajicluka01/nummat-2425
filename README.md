@@ -1,6 +1,6 @@
 # 18.2.2 Fresnelov integral
 
-Avtor: Luka Bajić <lb4129@student.uni-lj.si>
+Avtor: Luka Bajić (<lb4129@student.uni-lj.si>)
 
 ## Opis problema
 
