@@ -3,8 +3,7 @@ using LinearAlgebra
 using SparseArrays
 export conj_grad, conj_grad_baseline, nep_chol
 
-function nep_chol(A_::AbstractSparseMatrix)
-    A = copy(A_)
+function nep_chol(A::AbstractSparseMatrix)
     L = copy(A)
 
     for i=1:size(A,2)
@@ -78,7 +77,7 @@ function conj_grad(A::AbstractSparseMatrix, b::AbstractVector, L::AbstractSparse
     x_out = zeros(size(b))
 
     # Preprečimo neskončno zanko, v primeru da metoda ne konvergira
-    max_iter = 10000
+    max_iter = 1000
 
     # Izračunamo začetni residual
     r_prev = b - A*x_out
@@ -99,7 +98,7 @@ function conj_grad(A::AbstractSparseMatrix, b::AbstractVector, L::AbstractSparse
             push!(residuali, norm(r_next))
         end
 
-        if norm(r_next) < tol
+        if norm(r_next, Inf) < tol
             break
         end
 
@@ -118,10 +117,7 @@ function conj_grad(A::AbstractSparseMatrix, b::AbstractVector, L::AbstractSparse
     return x_out, iter
 end
 
-function conj_grad_baseline(A_::AbstractSparseMatrix, b_::AbstractVector; tol::Float64=10e-10, vrniresid::Bool = false)
-    A = copy(A_)
-    b = copy(b_)
-
+function conj_grad_baseline(A::AbstractSparseMatrix, b::AbstractVector; tol::Float64=10e-10, vrniresid::Bool = false)
     # Začnemo s poljubno začetno vrednostjo x_0
     x_0 = zeros(size(b))
 
@@ -152,7 +148,7 @@ function conj_grad_baseline(A_::AbstractSparseMatrix, b_::AbstractVector; tol::F
             push!(residuali, norm(r_next))
         end
 
-        if norm(r_next)^2 < tol
+        if norm(r_next, Inf) < tol
             break
         end
 

@@ -34,7 +34,6 @@ end
 end
 
 # Primer iz https://en.wikipedia.org/wiki/Incomplete_Cholesky_factorization
-# Matrika sicer ni simetrična, vendar je vseeno uporabna za testiranje metode nep_chol
 @testset "Nepopolni razcep Choleskega" begin
     I = [1., 2, 2, 3, 3, 4, 4, 4, 5, 5, 5]
     J = [1., 1, 2, 2, 3, 1, 3, 4, 1, 4, 5]
