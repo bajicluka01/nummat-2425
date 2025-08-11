@@ -3,27 +3,43 @@ using LinearAlgebra
 using SparseArrays
 export conj_grad, conj_grad_baseline, nep_chol
 
+"""
+    L = nep_chol(A)
+
+Izračunaj nepopolni razcep Choleskega matrike `A`.
+"""
 function nep_chol(A::AbstractSparseMatrix)
-    L = copy(A)
+    I_, J_, V_ = findnz(A)
+    # odsranimo elemente nad diagonalo
+    for k=1:length(J_)
+        if J_[k] > I_[k]
+            V_[k] = 0
+        end
+    end
+    L = dropzeros(sparse(I_, J_, V_))
 
     for i=1:size(A,2)
+        L = dropzeros(L)
+        I, J, V = findnz(L)
+
         sum = 0
-        for j=1:i-1
-            sum = sum + L[i,j]^2
+        for k=1:length(J)
+            if I[k] == i && J[k] < i
+                sum = sum + V[k]*V[k]
+            end
         end
 
         L[i,i] = sqrt(A[i,i]-sum)
 
         for j=i+1:size(A,2)
-            # elemente nad diagonalo nastavimo na 0
-            L[i,j] = 0
+            sum2 = A[j,i]
 
             for k=1:i-1
-                A[j,i] = A[j,i] - L[j,k] * L[i,k]
+                sum2 = sum2 - L[j,k]*L[i,k]
             end
 
             if L[j,i] != 0
-                L[j,i] = A[j,i] / L[i,i]
+                L[j,i] = sum2/L[i,i]
             end
         end
     end
@@ -31,6 +47,11 @@ function nep_chol(A::AbstractSparseMatrix)
     return dropzeros(L)
 end
 
+"""
+    x_out, iter = conj_grad(A, b, L)
+
+Izvedi metodo konjugiranih gradientov nad matriko `A` in vektorjem `b`, s predpogojevalcem `L`.
+"""
 function conj_grad(A::AbstractSparseMatrix, b::AbstractVector, L::AbstractSparseMatrix; tol::Float64=10e-10, vrniresid::Bool = false)
     function obr_sub(U, r::AbstractVector)
         n = size(r,1)
@@ -117,6 +138,11 @@ function conj_grad(A::AbstractSparseMatrix, b::AbstractVector, L::AbstractSparse
     return x_out, iter
 end
 
+"""
+    x_out, iter = conj_grad(A, b)
+
+Izvedi metodo konjugiranih gradientov nad matriko `A` in vektorjem `b`, brez predpogojevanja.
+"""
 function conj_grad_baseline(A::AbstractSparseMatrix, b::AbstractVector; tol::Float64=10e-10, vrniresid::Bool = false)
     # Začnemo s poljubno začetno vrednostjo x_0
     x_0 = zeros(size(b))

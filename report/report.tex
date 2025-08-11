@@ -149,11 +149,33 @@ J = \begin{bmatrix}1 & 2 & 1 & 2 & 3 & 5 & 4 & 3 & 5 \end{bmatrix}
 V = \begin{bmatrix}7 & 1.1 & 1.1 & 2 & 3 & 3 & 0.5 & 3 & 4.2 \end{bmatrix}
 \]
 
+Uporabnost tega pristopa postane bolj očitna pri bistveno večjih matrikah in če je število ničelnih elementov dovolj veliko.
+
+
 \subsection{Opis rešitve}
 Implementacija ponuja tri metode: $\textit{nep\_chol}$, ki izračuna nepopolni razcep Choleskega za podano matriko $A$, $\textit{conj\_grad\_baseline}$, ki izvede metodo konjugiranih gradientov nad podano matriko $A$ in vektorjem desnih strani $b$ in vrne iskan $x$, in $\textit{conj\_grad}$,  ki prav tako vrne $x$, le da metodo konjugiranih gradientov izvede s predpogojevanjem s podano  spodnjetrikotno matriko $L$.
 
 
 \subsubsection{Nepopolni razcep Choleskega}
+Razcep Choleskega je razcep $A=LL^T$, kjer je $L$ spodnjetrikotna matrika, $A$ pa je pozitivno definitna. Ideja nepopolnega razcepa Choleskega je, da za razpršene matrike najdemo približek razcepa, tako, da enostavno ignoriramo ničelne elemente. 
+
+
+Ker algoritem izkorišča podatkovno strukturo za razpršene matrike, in imamo opravka samo s simetričnimi matrikami, je smiselno  najprej nastaviti vse zgornjetrikotne elemente na 0, saj s tem pohitrimo iteriranje po strukturi znotraj iteracij algoritma.  Ta korak zahteva $n$ operacij, vendar razpolovi količino elementov v matriki. 
+
+
+Nato iteriramo čez matriko $A$ in posodabljamo diagonalne elemente s sledečo formulo:
+
+
+\[
+L_{i,i} = \sqrt{A_{i,i} - \sum_{k=1}^{i-1}L_{i,k}^2}
+\]
+
+kjer $i$ teče po dimenzijah matrike $A$. Hkrati pa posodabljamo še poddiagonalne elemente na sledeč način:
+
+
+\[
+L_{j,i} = \frac{A_{j,i}-\sum_{k=1}^{i-1}L_{i,k}L_{j,k}}{L_{i,i}}
+\]
 
 \subsubsection{Metoda konjugiranih gradientov brez predpogojevanja}
 Iščemo rešitev sistema $Ax=b$, kjer je matrika $A$ simetrična in pozitivno definitna. Za začetni približek $x_0$ vzamemo kar ničelni vektor in izračunamo $r_0 = b - Ax_0$. Nastavimo še $p_0=x_0$ in nato ponavljamo sledečo iteracijo:
@@ -286,7 +308,7 @@ Z zastavico $\textit{vrniresid}$ nam metodi vrneta tabelo residualov (oziroma ne
 (*@\HLJLnf{plot!}@*)(*@\HLJLp{(}@*)(*@\HLJLn{res2}@*)(*@\HLJLp{,}@*) (*@\HLJLn{label}@*)(*@\HLJLoB{=}@*)(*@\HLJLs{"{}s}@*) (*@\HLJLs{predpogojevanjem"{}}@*)(*@\HLJLp{,}@*) (*@\HLJLn{title}@*)(*@\HLJLoB{=}@*)(*@\HLJLs{"{}Primerjava}@*) (*@\HLJLs{residualov"{}}@*)(*@\HLJLp{)}@*)
 \end{lstlisting}
 
-\includegraphics[width=\linewidth]{jl_2WfWuh/demo_1_1.pdf}
+\includegraphics[width=\linewidth]{jl_j5L35R/demo_1_1.pdf}
 
 
 \end{document}

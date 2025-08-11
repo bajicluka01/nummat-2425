@@ -29,7 +29,21 @@
 #' spodnjetrikotno matriko $L$.
 
 #' ### Nepopolni razcep Choleskega
-#' 
+#' Razcep Choleskega je razcep $A=LL^T$, kjer je $L$ spodnjetrikotna matrika, $A$ pa je pozitivno definitna.
+#' Ideja nepopolnega razcepa Choleskega je, da za razpršene matrike najdemo približek razcepa, tako, da enostavno ignoriramo
+#' ničelne elemente. 
+
+#' Ker algoritem izkorišča podatkovno strukturo za razpršene matrike, in imamo opravka samo s simetričnimi matrikami, je smiselno 
+#' najprej nastaviti vse zgornjetrikotne elemente na 0, saj s tem pohitrimo iteriranje po strukturi znotraj iteracij algoritma. 
+#' Ta korak zahteva $n$ operacij, vendar razpolovi količino elementov v matriki. 
+
+#' Nato iteriramo čez matriko $A$ in posodabljamo diagonalne elemente s sledečo formulo:
+
+#' $L_{i,i} = \sqrt{A_{i,i} - \sum_{k=1}^{i-1}L_{i,k}^2}$
+
+#' kjer $i$ teče po dimenzijah matrike $A$. Hkrati pa posodabljamo še poddiagonalne elemente na sledeč način:
+
+#' $L_{j,i} = \frac{A_{j,i}-\sum_{k=1}^{i-1}L_{i,k}L_{j,k}}{L_{i,i}}$
 
 #' ### Metoda konjugiranih gradientov brez predpogojevanja
 #' Iščemo rešitev sistema $Ax=b$, kjer je matrika $A$ simetrična in pozitivno definitna. Za začetni približek $x_0$
@@ -133,140 +147,3 @@ x2, it2, res2 = conj_grad(A, b, L, vrniresid=true, tol=10e-20)
 
 plot(res1, label="brez predpogojevanja", title="Primerjava residualov")
 plot!(res2, label="s predpogojevanjem", title="Primerjava residualov")
-
-
-
-
-
-n=600
-I = [1.0]
-J = [1.0]
-V = [rand()*10.0]
-for i=2:n
-    push!(V, rand()*80.0)
-    push!(I, i)
-    push!(J, i)
-
-    if rand() < 0.1
-        r = rand()
-        push!(V, r)
-        push!(V, r)
-        r1 = rand(1:n)
-        r2 = rand(1:n)
-        while r1==i || r2==i # poskrbimo, da ne prepišemo diagonale
-            r1 = rand(1:n)
-            r2 = rand(1:n)
-        end
-        push!(I, r1)
-        push!(J, r2)
-        push!(I, r2)
-        push!(J, r1)
-    end
-end
-A = sparse(I, J, V)
-b = rand(n)
-x1, it1, res1 = conj_grad_baseline(A, b, vrniresid=true, tol=10e-20)
-L2 = nep_chol(A)
-L = test(A)
-x2, it2, res2 = conj_grad(A, b, L, vrniresid=true, tol=10e-20)
-isapprox(L, L2)
-
-tmp = L2-L
-for i=1:600
-    for j=1:600
-        if tmp[i,j] != 0
-            println(tmp[i,j])
-        end
-    end
-end
-
-function test(A::AbstractSparseMatrix)
-    L = copy(A)
-    
-    for i=1:size(A,2)
-        L = dropzeros(L)
-        I, J, V = findnz(L)
-        sum = 0
-        for k=1:length(J)
-            if I[k] == i && J[k] < i #&& V[k] != 0
-                println(i, " ", k, " " , sum, " " , J[k], " " , V[k])
-                sum = sum + V[k]^2
-            end
-        end
-
-        L[i,i] = sqrt(A[i,i]-sum)
-
-        for j=i+1:size(A,2)
-            # elemente nad diagonalo nastavimo na 0
-            L[i,j] = 0
-
-            for k=1:i-1
-                A[j,i] = A[j,i] - L[j,k] * L[i,k]
-            end
-
-            if L[j,i] != 0
-                L[j,i] = A[j,i] / L[i,i]
-            end
-        end
-    end
-
-    for i = 1:size(A,2)
-        for j = i+1:size(A,2)
-            L[i,j] = 0
-        end
-    end
-
-    return dropzeros(L)
-end
-
-A
-I, J, V = findnz(A)
-L2 = test(A)
-L = nep_chol(A)
-isapprox(L, L2, atol=10e-10)
-l2 = L2*L2'
-l = L*L'
-isapprox(l2, l)
-
-
-
-I = [1., 2, 2, 3, 3, 4, 4, 4, 5, 5, 5]
-J = [1., 1, 2, 2, 3, 1, 3, 4, 1, 4, 5]
-V = [5., -2, 5, -2, 5, -2, -2, 5, -2, -2, 5]
-A = sparse(I, J, V)
-L2 = test(A)
-L = nep_chol(A)
-
-isapprox(L2*L2', res, atol=10e-10)
-isapprox(L*L', res, atol=10e-10)
-
-I_res = [1., 1, 1, 1, 2, 2, 2, 2, 2, 3, 3, 3, 4, 4, 4, 4, 4, 5, 5, 5, 5]
-J_res = [1., 2, 4, 5, 1, 2, 3, 4, 5, 2, 3, 4, 1, 2, 3, 4, 5, 1, 2, 4, 5]
-V_res = [5, -2, -2, -2, -2, 5, -2, 0.8, 0.8, -2, 5, -2, -2, 0.8, -2, 5, -2, -2, 0.8, -2, 5]
-res = sparse(I_res, J_res, V_res, 5, 5)
-
-
-
-
-
-
-for j=i+1:size(A,2)
-            # elemente nad diagonalo nastavimo na 0
-            L[i,j] = 0
-
-            sum = 0
-            for k=1:length(J)
-                if I[k] == i && J[k] < i 
-                    if I[k] == j && J[k] < j
-                    #if I[j] == j && J[j] < j
-                        #sum = sum + V[k]*V[j]
-                        A[j,i] = A[j,i] - V[k]*V[k]
-                    end
-                end
-            end
-
-            if L[j,i] != 0
-                #L[j,i] = (A[j,i] - sum)/L[i,i]
-                L[j,i] = A[j,i] / L[i,i]
-            end
-        end
