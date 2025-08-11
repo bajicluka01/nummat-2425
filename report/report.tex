@@ -126,8 +126,28 @@ Avtor: Luka Bajić
 
 
 \subsection{Opis problema}
-Metoda konjugiranih gradientov je postopek za reševanje linearnega sistema enačb $Ax = b$, ob predpostavki, da je matrika A pozitivno definitna. Ker imamo opravka z razpršenimi matrikami, je s stališča prostorske zahtevnosti smiselno, da jih hranimo v posebni strukturi, ki hrani samo neničelne elemente in sestoji iz treh vektorjev: vektor  vrednosti v matriki, vektor indeksov po vrsticah in vektor indeksov po stolpcih. 
+Metoda konjugiranih gradientov je postopek za reševanje linearnega sistema enačb $Ax = b$, ob predpostavki, da je matrika A pozitivno definitna. V našem primeru se ukvarjamo z razpršenimi matrikami, torej matrikami, ki imajo večino elementov ničelnih. Da izboljšamo hitrost konvergence metode konjugiranih gradientov, uporabimo predpogojevanje z matriko $M=LL^T$, kjer spodnjetrikotno matriko $L$ dobimo z nepopolnim razcepom Choleskega. 
 
+
+Ker imamo opravka z razpršenimi matrikami, je s stališča prostorske zahtevnosti smiselno, da jih hranimo v posebni strukturi, ki hrani samo neničelne elemente in sestoji iz treh vektorjev: vektor  vrednosti v matriki, vektor indeksov po vrsticah in vektor indeksov po stolpcih. Na primer za sledečo matriko:
+
+
+\[
+A=\begin{bmatrix}7 & 1.1 & 0 & 0 & 0 \\ 1.1 & 2 & 0 & 0 & 0 \\ 0 & 0 & 3 & 0 & 3 \\ 0 & 0 & 0 & 0.5 & 0 \\ 0 & 0 & 3 & 0 & 4.2 \end{bmatrix}
+\]
+
+hranimo vektorje
+
+
+\[
+I = \begin{bmatrix}1 & 1 & 2 & 2 & 3 & 3 & 4 & 5 & 5 \end{bmatrix}
+\]
+\[
+J = \begin{bmatrix}1 & 2 & 1 & 2 & 3 & 5 & 4 & 3 & 5 \end{bmatrix}
+\]
+\[
+V = \begin{bmatrix}7 & 1.1 & 1.1 & 2 & 3 & 3 & 0.5 & 3 & 4.2 \end{bmatrix}
+\]
 
 \subsection{Opis rešitve}
 Implementacija ponuja tri metode: $\textit{nep\_chol}$, ki izračuna nepopolni razcep Choleskega za podano matriko $A$, $\textit{conj\_grad\_baseline}$, ki izvede metodo konjugiranih gradientov nad podano matriko $A$ in vektorjem desnih strani $b$ in vrne iskan $x$, in $\textit{conj\_grad}$,  ki prav tako vrne $x$, le da metodo konjugiranih gradientov izvede s predpogojevanjem s podano  spodnjetrikotno matriko $L$.
@@ -136,8 +156,64 @@ Implementacija ponuja tri metode: $\textit{nep\_chol}$, ki izračuna nepopolni r
 \subsubsection{Nepopolni razcep Choleskega}
 
 \subsubsection{Metoda konjugiranih gradientov brez predpogojevanja}
+Iščemo rešitev sistema $Ax=b$, kjer je matrika $A$ simetrična in pozitivno definitna. Za začetni približek $x_0$ vzamemo kar ničelni vektor in izračunamo $r_0 = b - Ax_0$. Nastavimo še $p_0=x_0$ in nato ponavljamo sledečo iteracijo:
+
+
+\[
+\alpha_k=\frac{r_k^Tr_k}{p_k^TAp_k}
+\]
+
+\[
+x_{k+1}=x_k-\alpha_kp_k
+\]
+
+\[
+r_{k+1}=r_k-\alpha_kAp_k
+\]
+
+\[
+\beta_k=\frac{r_{k+1}^Tr_{k+1}}{r_k^Tr_k}
+\]
+
+\[
+p_{k+1}=r_{k+1}+\beta_kp_k
+\]
+
+Postopek zaključimo kadar je norma vektorja $r_{k+1}$ manjša od želene tolerance.
+
 
 \subsubsection{Metoda konjugiranih gradientov s predpogojevanjem}
+Predpogojevanje izvajamo z matriko $M=LL^T$, kjer spodnjetrikotno matriko $L$ dobimo z nepopolnim razcepom Choleskega. Rešiti moramo sistem $Mz=r$, vendar ker nočemo računati inverza $M^{-1}$ (iz vidika časovne zahtevnosti), lahko najprej s premo substitucijo rešimo sistem $La=r$ in nato z obratno substitucijo rešimo sistem $L^Tz=a$.  Tako prema kot obratna substitucija imata časovno zahtevnost $O(n^2)$, kar je bistveno hitrejše od računanja inverza.
+
+
+Zgornji postopek moramo ponoviti v vsakem koraku iteracije, in sicer na sledeč način: najprej kot začetno vrednost $p_0$ nastavimo rešitev sistema $Mz_0=r_0$, korake pa izvajamo na sledeč način:
+
+
+\[
+\alpha_k=\frac{r_k^Tz_k}{p_k^TAp_k}
+\]
+
+\[
+x_{k+1}=x_k-\alpha_kp_k
+\]
+
+\[
+r_{k+1}=r_k-\alpha_kAp_k
+\]
+
+Rešimo sistem $Mz_{k+1}=r_{k+1}$.
+
+
+\[
+\beta_k=\frac{r_{k+1}^Tz_{k+1}}{r_k^Tz_k}
+\]
+
+\[
+p_{k+1}=z_{k+1}+\beta_kp_k
+\]
+
+Zaustavitveni pogoj ostane enak kot pri osnovni metodi.
+
 
 \subsection{Primer uporabe}
 Spodnji izsek kode demonstrira razliko med metodo konjugiranih gradientov brez predpogojevanja in s predpogojevanjem. 
@@ -168,11 +244,13 @@ MKG s predpogojevanjem se zaustavi po 1 korakih.
 Kot vidimo že na relativno majhnem primeru, predpogojevanje bistveno izboljša konvergenco.
 
 
-V spodnjem izseku si ogledamo še primer z bistveno večjo matriko, ki jo zgeneriramo psevdonaključno. Z zastavico $\textit{vrniresid}$ nam metodi vrneta tabelo residualov na posameznem koraku iteracije. Residuale izrišemo s paketom Plots in tako dobimo vizualno primerjavo hitrosti konvergence med metodama. 
+V spodnjem izseku si ogledamo še primer z bistveno večjo matriko, ki jo zgeneriramo psevdonaključno: za vse diagonalne elemente zgeneriramo naključna števila iz nekega intervala, za preostale elemente pa  z neko manjšo verjetnostjo (npr. 0.1) zgeneriramo manjša števila, da ohranimo dominantnost diagonale. Vsako izmed teh števil zapišemo tako na indeks $(i,j)$ kot $(j,i)$, da ohranimo simetričnost. Ta postopek sicer ne zagotavlja pozitivne definitnosti zgenerirane matrike, vendar se empirično izkaže kot dovolj dober za potrebe te demonstracije.
+
+
+Z zastavico $\textit{vrniresid}$ nam metodi vrneta tabelo residualov (oziroma neskončnih norm vektorjev $r_{k+1}$) na posameznem koraku iteracije. Residuale izrišemo s paketom Plots in tako dobimo vizualno primerjavo hitrosti konvergence med metodama. 
 
 
 \begin{lstlisting}
-(*@\HLJLk{using}@*) (*@\HLJLn{Plots}@*)
 (*@\HLJLn{n}@*)(*@\HLJLoB{=}@*)(*@\HLJLni{700}@*)
 (*@\HLJLn{I}@*) (*@\HLJLoB{=}@*) (*@\HLJLp{[}@*)(*@\HLJLnfB{1.0}@*)(*@\HLJLp{]}@*)
 (*@\HLJLn{J}@*) (*@\HLJLoB{=}@*) (*@\HLJLp{[}@*)(*@\HLJLnfB{1.0}@*)(*@\HLJLp{]}@*)
@@ -188,7 +266,7 @@ V spodnjem izseku si ogledamo še primer z bistveno večjo matriko, ki jo zgener
         (*@\HLJLnf{push!}@*)(*@\HLJLp{(}@*)(*@\HLJLn{V}@*)(*@\HLJLp{,}@*) (*@\HLJLn{r}@*)(*@\HLJLp{)}@*)
         (*@\HLJLn{r1}@*) (*@\HLJLoB{=}@*) (*@\HLJLnf{rand}@*)(*@\HLJLp{(}@*)(*@\HLJLni{1}@*)(*@\HLJLoB{:}@*)(*@\HLJLn{n}@*)(*@\HLJLp{)}@*)
         (*@\HLJLn{r2}@*) (*@\HLJLoB{=}@*) (*@\HLJLnf{rand}@*)(*@\HLJLp{(}@*)(*@\HLJLni{1}@*)(*@\HLJLoB{:}@*)(*@\HLJLn{n}@*)(*@\HLJLp{)}@*)
-        (*@\HLJLk{while}@*) (*@\HLJLn{r1}@*)(*@\HLJLoB{==}@*)(*@\HLJLn{i}@*) (*@\HLJLoB{||}@*) (*@\HLJLn{r2}@*)(*@\HLJLoB{==}@*)(*@\HLJLn{i}@*) 
+        (*@\HLJLk{while}@*) (*@\HLJLn{r1}@*)(*@\HLJLoB{==}@*)(*@\HLJLn{i}@*) (*@\HLJLoB{||}@*) (*@\HLJLn{r2}@*)(*@\HLJLoB{==}@*)(*@\HLJLn{i}@*) (*@\HLJLcs{{\#}}@*) (*@\HLJLcs{poskrbimo,}@*) (*@\HLJLcs{da}@*) (*@\HLJLcs{ne}@*) (*@\HLJLcs{prepišemo}@*) (*@\HLJLcs{diagonale}@*)
             (*@\HLJLn{r1}@*) (*@\HLJLoB{=}@*) (*@\HLJLnf{rand}@*)(*@\HLJLp{(}@*)(*@\HLJLni{1}@*)(*@\HLJLoB{:}@*)(*@\HLJLn{n}@*)(*@\HLJLp{)}@*)
             (*@\HLJLn{r2}@*) (*@\HLJLoB{=}@*) (*@\HLJLnf{rand}@*)(*@\HLJLp{(}@*)(*@\HLJLni{1}@*)(*@\HLJLoB{:}@*)(*@\HLJLn{n}@*)(*@\HLJLp{)}@*)
         (*@\HLJLk{end}@*)
@@ -208,7 +286,7 @@ V spodnjem izseku si ogledamo še primer z bistveno večjo matriko, ki jo zgener
 (*@\HLJLnf{plot!}@*)(*@\HLJLp{(}@*)(*@\HLJLn{res2}@*)(*@\HLJLp{,}@*) (*@\HLJLn{label}@*)(*@\HLJLoB{=}@*)(*@\HLJLs{"{}s}@*) (*@\HLJLs{predpogojevanjem"{}}@*)(*@\HLJLp{,}@*) (*@\HLJLn{title}@*)(*@\HLJLoB{=}@*)(*@\HLJLs{"{}Primerjava}@*) (*@\HLJLs{residualov"{}}@*)(*@\HLJLp{)}@*)
 \end{lstlisting}
 
-\includegraphics[width=\linewidth]{jl_oWzURE/demo_1_1.pdf}
+\includegraphics[width=\linewidth]{jl_2WfWuh/demo_1_1.pdf}
 
 
 \end{document}
