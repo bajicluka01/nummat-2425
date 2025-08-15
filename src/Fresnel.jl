@@ -3,8 +3,8 @@ using LinearAlgebra
 
 export fresnel_cos
 
-function fresnel_cos(x::Float64, n_vozlov::Integer=100)
-    function aux(x::Float64, n::Integer)
+function fresnel_cos(x::Float64; metoda::String="simpson", n_vozlov::Integer=100)
+    function aux_gl(x::Float64, n::Integer)
         l, w = gauss_laguerre(n)
 
         y = pi*x*x/2
@@ -46,6 +46,47 @@ function fresnel_cos(x::Float64, n_vozlov::Integer=100)
         return l, w
     end
 
+    function adaptiven_simpson(a::Float64, b::Float64, iter::Integer; tol::Float64=5*10e-11)
+        function f(x::Float64)
+            return cos(pi*x*x/2)
+        end
+
+        f_a = f(a)
+        f_b = f(b)
+
+        h = b - a
+        c = (a+b)/2
+        f_c = f(c)
+
+        d = (a+c)/2
+        f_d = f(d)
+
+        e = (c+b)/2
+        f_e = f(e)
+
+        S1 = h/6 * (f_a + 4 * f_c + f_b)
+        S2 = h/12 * (f_a + 4*f_d + 2*f_c + 4*f_e + f_b)
+
+        napaka = abs(S2-S1)
+
+        iter = iter + 1
+
+        if (napaka < 15*tol)
+            S = S2 + (S2-S1) / 15
+        else
+            # preprečimo neskončno ciklanje
+            if (iter > 10^9)
+                return S2 + (S2-S1) / 15
+            end
+
+            S11 = adaptiven_simpson(a, c, iter, tol=tol/2)
+            S21 = adaptiven_simpson(c, b, iter, tol=tol/2)
+            S = S11 + S21
+        end
+        
+        return S
+    end
+
     mult = 1
     if x == 0.0
         return x 
@@ -58,20 +99,19 @@ function fresnel_cos(x::Float64, n_vozlov::Integer=100)
     # dovolj majhne n-je (zanemarljivo s stališča časovne kompleksnosti)
     if abs(x) <= 1.5
         res = 0.0
-        for n=0:12
+        for n=0:14
             st = (-1)^n * (0.5*pi)^(2*n) * x^(4n+1)
             im = factorial(big(2*n)) * (4*n+1)
             res = res + st/im
         end
     else # sicer uporabimo pomožne funkcije
-        res_prev = 0
-        #while true
-        f, g = aux(x, n_vozlov)
-        param = pi*x^2/2
-        res = 0.5 + f * sin(param) - g * cos(param)
-
-        #    if abs(res-res_prev)
-        #end
+        if metoda == "gauss_laguerre"
+            f, g = aux_gl(x, n_vozlov)
+            param = pi*x^2/2
+            res = 0.5 + f * sin(param) - g * cos(param)
+        else # privzeta metoda je adaptivno Simpsonovo pravilo
+            res = adaptiven_simpson(0.0, x, 1)
+        end
     end
 
     return mult * res
